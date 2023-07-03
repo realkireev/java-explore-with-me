@@ -27,7 +27,7 @@ public class StatisticsClient {
     private final String statServerPath;
     private final HttpHeaders headers = new HttpHeaders();
 
-    public StatisticsClient(RestTemplateBuilder builder, @Value("${stat.server.path}") String statServerPath ) {
+    public StatisticsClient(RestTemplateBuilder builder, @Value("${stat.server.path}") String statServerPath) {
         this.rest = builder
                 .uriTemplateHandler(new DefaultUriBuilderFactory(statServerPath))
                 .requestFactory(HttpComponentsClientHttpRequestFactory::new)
