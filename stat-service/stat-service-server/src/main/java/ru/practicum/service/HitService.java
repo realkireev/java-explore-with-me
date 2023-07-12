@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.dto.HitRequestDto;
 import ru.practicum.dto.HitResponseDto;
+import ru.practicum.exception.IllegalParametersException;
 import ru.practicum.mapper.HitMapper;
 import ru.practicum.repo.HitRepository;
 
@@ -25,6 +26,8 @@ public class HitService {
 
     public List<HitResponseDto> getStatistics(LocalDateTime start, LocalDateTime end, List<String> uris,
                                               Boolean unique) {
+        validateConsequentDates(start, end);
+
         List<HitResponseDto> result;
         List<String> clearedUris = uris.stream()
                 .map(x -> x.replace("[", "").replace("]", ""))
@@ -59,5 +62,11 @@ public class HitService {
         });
 
         return hitResponseDtoList;
+    }
+
+    private void validateConsequentDates(LocalDateTime start, LocalDateTime end) {
+        if (start != null && end != null && end.isBefore(start)) {
+            throw new IllegalParametersException("End must be after start.");
+        }
     }
 }
