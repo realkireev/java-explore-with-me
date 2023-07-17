@@ -1,12 +1,12 @@
-package ru.practicum.service;
+package ru.practicum.service.implementations;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.common.Validator;
+import ru.practicum.common.CustomPageRequest;
+import ru.practicum.common.CustomValidator;
 import ru.practicum.dto.EventRequestDto;
 import ru.practicum.dto.EventResponseDto;
 import ru.practicum.dto.EventUpdateRequestDto;
@@ -23,24 +23,30 @@ import ru.practicum.model.RequestStatus;
 import ru.practicum.model.SortType;
 import ru.practicum.model.User;
 import ru.practicum.repo.EventRepository;
+import ru.practicum.repo.RequestRepository;
+import ru.practicum.repo.UserRepository;
+import ru.practicum.service.interfaces.EventService;
+import ru.practicum.service.interfaces.StatisticsService;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static ru.practicum.common.Variables.EVENT_WAS_NOT_FOUND_MESSAGE;
+import static ru.practicum.common.Variables.USER_WAS_NOT_FOUND_MESSAGE;
 
 @Service
 @RequiredArgsConstructor
-public class EventService {
+public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
-    private final UserService userService;
-    private final RequestService requestService;
+    private final UserRepository userRepository;
+    private final RequestRepository requestRepository;
     private final StatisticsService statisticsService;
-    private final Validator validator;
 
+    @Override
     @Transactional(readOnly = true)
     public List<EventResponseDto> getEvents(List<Long> userIds, List<EventState> states, List<Long> catIds,
                                             LocalDateTime start, LocalDateTime end, int from, int size) {
@@ -64,7 +70,7 @@ public class EventService {
             bySearchCriteria = bySearchCriteria.and(event.eventDate.before(end));
         }
 
-        List<Event> foundItems = eventRepository.findAll(bySearchCriteria, PageRequest.of(from / size, size))
+        List<Event> foundItems = eventRepository.findAll(bySearchCriteria, CustomPageRequest.of(from, size))
                 .getContent();
 
         return foundItems.stream()
@@ -73,12 +79,13 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     @Transactional(readOnly = true)
     public List<EventResponseDto> getPublishedEvents(String text, List<Long> catIds, Boolean paid,
                                                      LocalDateTime start, LocalDateTime end, Boolean onlyAvailable,
                                                      SortType sortType, int from, int size) {
 
-        validator.validateConsequentDates(start, end);
+        CustomValidator.validateConsequentDates(start, end);
 
         QEvent event = QEvent.event;
         BooleanExpression bySearchCriteria = event.state.eq(EventState.PUBLISHED);
@@ -108,7 +115,7 @@ public class EventService {
             sort = Sort.by(Sort.Direction.ASC, "eventDate");
         }
 
-        List<Event> result = eventRepository.findAll(bySearchCriteria, PageRequest.of(from / size, size, sort))
+        List<Event> result = eventRepository.findAll(bySearchCriteria, CustomPageRequest.of(from, size, sort))
                 .getContent();
 
         if (sortType != null && sortType.equals(SortType.VIEWS)) {
@@ -120,34 +127,36 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public EventResponseDto getPublishedEventById(Long eventId) {
-        Event result = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED);
-        if (result == null) {
-            throw new ObjectNotFoundException("Event with id=%d was not found.", eventId);
-        }
+        Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED).orElseThrow(
+                () -> new ObjectNotFoundException(EVENT_WAS_NOT_FOUND_MESSAGE, eventId));
 
-        return addStatistics(eventMapper.toEventResponseDto(result), null, null);
+        return addStatistics(eventMapper.toEventResponseDto(event), null, null);
     }
 
+    @Override
     public List<EventResponseDto> getEventsByUserId(Long userId, int from, int size) {
-        return eventRepository.findAllByInitiatorId(userId, PageRequest.of(from / size, size))
+        return eventRepository.findAllByInitiatorId(userId, CustomPageRequest.of(from, size))
                 .stream()
                 .map(eventMapper::toEventResponseDto)
                 .collect(Collectors.toList());
     }
 
+    @Override
     public EventResponseDto getEventByIdAndUserId(Long userId, Long eventId) {
-        userService.existUserById(userId);
-        Optional<Event> event = eventRepository.findByIdAndInitiatorId(eventId, userId);
-        if (event.isEmpty()) {
-            throwObjectNotFoundException(eventId);
-        }
+        existUserById(userId);
+        Event event = eventRepository.findByIdAndInitiatorId(eventId, userId).orElseThrow(
+                () -> new ObjectNotFoundException(EVENT_WAS_NOT_FOUND_MESSAGE, eventId));
 
-        return eventMapper.toEventResponseDto(event.get());
+        return eventMapper.toEventResponseDto(event);
     }
 
+    @Override
+    @Transactional
     public EventResponseDto createEvent(Long userId, EventRequestDto eventRequestDto) {
-        User user = userService.findUserById(userId);
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new ObjectNotFoundException(USER_WAS_NOT_FOUND_MESSAGE, userId));
 
         Event event = eventMapper.toEvent(eventRequestDto);
         event.setInitiator(user);
@@ -157,10 +166,12 @@ public class EventService {
         return eventMapper.toEventResponseDto(eventRepository.saveAndFlush(event));
     }
 
+    @Override
+    @Transactional
     public EventResponseDto updateEvent(Long userId, Long eventId, EventUpdateRequestDto eventUpdateRequestDto) {
-        validator.validate(eventUpdateRequestDto);
+        CustomValidator.validate(eventUpdateRequestDto);
 
-        userService.findUserById(userId);
+        existUserById(userId);
         Event storedEvent = findEventById(eventId);
 
         if (storedEvent.getState().equals(EventState.PUBLISHED)) {
@@ -184,8 +195,10 @@ public class EventService {
         return eventMapper.toEventResponseDto(storedEvent);
     }
 
+    @Override
+    @Transactional
     public EventResponseDto publishOrCancelEvent(Long eventId, EventUpdateRequestDto eventUpdateRequestDto) {
-        validator.validate(eventUpdateRequestDto);
+        CustomValidator.validate(eventUpdateRequestDto);
 
         Event storedEvent = findEventById(eventId);
         eventMapper.toEvent(eventUpdateRequestDto, storedEvent);
@@ -219,27 +232,14 @@ public class EventService {
         return eventMapper.toEventResponseDto(eventRepository.saveAndFlush(storedEvent));
     }
 
+    @Override
     public Event findEventById(Long eventId) {
-        Optional<Event> result = eventRepository.findById(eventId);
-
-        if (result.isEmpty()) {
-            throwObjectNotFoundException(eventId);
-        }
-        return result.get();
-    }
-
-    public void existsEventById(Long eventId) {
-        if (!eventRepository.existsById(eventId)) {
-            throwObjectNotFoundException(eventId);
-        }
-    }
-
-    private void throwObjectNotFoundException(Long eventId) {
-        throw new ObjectNotFoundException("Event with id=%d was not found", eventId);
+        return eventRepository.findById(eventId).orElseThrow(
+                () -> new ObjectNotFoundException(EVENT_WAS_NOT_FOUND_MESSAGE, eventId));
     }
 
     private EventResponseDto addStatistics(EventResponseDto erd, LocalDateTime start, LocalDateTime end) {
-        long confirmedRequests = requestService.countRequestsByEventIdAndStatus(erd.getId(), RequestStatus.CONFIRMED);
+        long confirmedRequests = requestRepository.countAllByEventIdAndStatus(erd.getId(), RequestStatus.CONFIRMED);
         erd.setConfirmedRequests(confirmedRequests);
 
         List<HitResponseDto> stat = statisticsService.getStatistics(start, end, List.of("/events/" + erd.getId()),
@@ -293,5 +293,11 @@ public class EventService {
         }
 
         return eventDtoList;
+    }
+
+    private void existUserById(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ObjectNotFoundException(USER_WAS_NOT_FOUND_MESSAGE, userId);
+        }
     }
 }

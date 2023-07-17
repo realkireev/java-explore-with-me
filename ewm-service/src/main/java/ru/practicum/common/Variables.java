@@ -15,8 +15,14 @@ public class Variables {
     public static final String FROM_DEFAULT = "0";
     public static final String SIZE_DEFAULT = "10";
     public static final String FROM_BELOW_ZERO_MESSAGE = "From should be >= 0";
-    public static final String SIZE_BELOW_ZERO_MESSAGE = "Size should be >= 0";
+    public static final String SIZE_NOT_POSITIVE_MESSAGE = "Size should be >= 0";
     public static final String BAD_REQUEST_REASON = "Incorrectly made request.";
     public static final String CONFLICT_REASON = "Integrity constraint has been violated.";
     public static final String NOT_FOUND_REASON = "The required object was not found.";
+    public static final String INTERNAL_SERVER_ERROR_REASON = "Internal server error was encountered.";
+    public static final String USER_WAS_NOT_FOUND_MESSAGE = "User with id=%d was not found";
+    public static final String CATEGORY_WAS_NOT_FOUND_MESSAGE = "Category with id=%d was not found";
+    public static final String EVENT_WAS_NOT_FOUND_MESSAGE = "Event with id=%d was not found.";
+    public static final String COMPILATION_WAS_NOT_FOUND_MESSAGE = "Compilation with id=%d was not found";
+    public static final String REQUEST_WAS_NOT_FOUND_MESSAGE = "Request with id=%d was not found";
 }

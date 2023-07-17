@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -26,6 +25,6 @@ public class Compilation {
     private String title;
     private Boolean pinned;
 
-    @ManyToMany(targetEntity = Event.class, fetch = FetchType.LAZY)
+    @ManyToMany(targetEntity = Event.class)
     private Set<Event> event;
 }

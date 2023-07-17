@@ -15,7 +15,7 @@ public interface EventRepository extends JpaRepository<Event, Long>, QuerydslPre
 
     Optional<Event> findByIdAndInitiatorId(Long eventId, Long userId);
 
-    Event findByIdAndState(Long eventId, EventState state);
+    Optional<Event> findByIdAndState(Long eventId, EventState state);
 
     @Query(value = "SELECT a.id FROM (" +
             " SELECT id, participant_limit, q.qty, (participant_limit = 0 OR participant_limit > q.qty OR q.qty ISNULL)" +

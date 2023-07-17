@@ -1,8 +1,9 @@
-package ru.practicum.service;
+package ru.practicum.service.implementations;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.ConfirmRequestDto;
 import ru.practicum.dto.ConfirmResponseDto;
 import ru.practicum.dto.RequestResponseDto;
@@ -13,31 +14,31 @@ import ru.practicum.model.Event;
 import ru.practicum.model.EventState;
 import ru.practicum.model.Request;
 import ru.practicum.model.RequestStatus;
+import ru.practicum.repo.EventRepository;
 import ru.practicum.repo.RequestRepository;
+import ru.practicum.repo.UserRepository;
+import ru.practicum.service.interfaces.RequestService;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static ru.practicum.common.Variables.EVENT_WAS_NOT_FOUND_MESSAGE;
+import static ru.practicum.common.Variables.REQUEST_WAS_NOT_FOUND_MESSAGE;
+import static ru.practicum.common.Variables.USER_WAS_NOT_FOUND_MESSAGE;
+
 @Service
+@RequiredArgsConstructor
 @Slf4j
-public class RequestService {
+public class RequestServiceImpl implements RequestService {
     private final RequestRepository requestRepository;
     private final RequestMapper requestMapper;
-    private final UserService userService;
-    private final EventService eventService;
+    private final UserRepository userRepository;
+    private final EventRepository eventRepository;
 
-    public RequestService(RequestRepository requestRepository, RequestMapper requestMapper, UserService userService,
-                          @Lazy EventService eventService) {
-        this.requestRepository = requestRepository;
-        this.requestMapper = requestMapper;
-        this.userService = userService;
-        this.eventService = eventService;
-    }
-
+    @Override
     public List<RequestResponseDto> getRequestsByUserId(Long userId) {
-        userService.existUserById(userId);
+        existUserById(userId);
 
         List<Request> result = requestRepository.findAllByRequesterId(userId);
 
@@ -46,9 +47,10 @@ public class RequestService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public List<RequestResponseDto> getRequestsByUserIdAndEventId(Long userId, Long eventId) {
-        userService.existUserById(userId);
-        eventService.existsEventById(eventId);
+        existUserById(userId);
+        existsEventById(eventId);
 
         List<Request> requests = requestRepository.findAllByEventId(eventId);
 
@@ -57,9 +59,12 @@ public class RequestService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional
     public RequestResponseDto createRequest(Long userId, Long eventId) {
-        userService.existUserById(userId);
-        Event event = eventService.findEventById(eventId);
+        existUserById(userId);
+        Event event = eventRepository.findById(eventId).orElseThrow(
+                () -> new ObjectNotFoundException(EVENT_WAS_NOT_FOUND_MESSAGE, eventId));
 
         if (event.getInitiator().getId().equals(userId)) {
             throw new IllegalActionException("Requests from the initiator are not allowed.");
@@ -92,13 +97,15 @@ public class RequestService {
         return requestMapper.toRequestResponseDto(requestRepository.saveAndFlush(request));
     }
 
+    @Override
+    @Transactional
     public ConfirmResponseDto confirmOrCancelRequest(Long userId, Long eventId, ConfirmRequestDto confirmRequestDto) {
         if (confirmRequestDto == null) {
             throw new IllegalActionException("Empty payload is not allowed.");
         }
 
-        userService.existUserById(userId);
-        eventService.existsEventById(eventId);
+        existUserById(userId);
+        existsEventById(eventId);
 
         if (confirmRequestDto.getRequestIds() != null) {
             if (requestRepository.countAllByStatusAndIdIn(RequestStatus.CONFIRMED, confirmRequestDto.getRequestIds()) > 0) {
@@ -122,24 +129,30 @@ public class RequestService {
                 .build();
     }
 
+    @Override
+    @Transactional
     public RequestResponseDto cancelRequest(Long userId, Long requestId) {
-        userService.existUserById(userId);
+        existUserById(userId);
         Request request = findRequestById(requestId);
         request.setStatus(RequestStatus.CANCELED);
 
         return requestMapper.toRequestResponseDto(requestRepository.saveAndFlush(request));
     }
 
-    public int countRequestsByEventIdAndStatus(Long eventId, RequestStatus status) {
-        return requestRepository.countAllByEventIdAndStatus(eventId, status);
+    private Request findRequestById(Long requestId) {
+        return requestRepository.findById(requestId).orElseThrow(
+                () -> new ObjectNotFoundException(REQUEST_WAS_NOT_FOUND_MESSAGE, requestId));
     }
 
-    private Request findRequestById(Long requestId) {
-        Optional<Request> request = requestRepository.findById(requestId);
-        if (request.isEmpty()) {
-            throw new ObjectNotFoundException("Request with id=%s was not found.", requestId);
+    private void existUserById(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ObjectNotFoundException(USER_WAS_NOT_FOUND_MESSAGE, userId);
         }
+    }
 
-        return request.get();
+    private void existsEventById(Long eventId) {
+        if (!eventRepository.existsById(eventId)) {
+            throw new ObjectNotFoundException(EVENT_WAS_NOT_FOUND_MESSAGE, eventId);
+        }
     }
 }

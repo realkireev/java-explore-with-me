@@ -8,7 +8,6 @@ import lombok.Setter;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -31,7 +30,7 @@ public class Event {
     private String annotation;
     private String description;
 
-    @OneToOne(targetEntity = Category.class, fetch = FetchType.EAGER)
+    @OneToOne(targetEntity = Category.class)
     private Category category;
 
     private LocalDateTime eventDate;
@@ -43,7 +42,7 @@ public class Event {
     private Integer participantLimit;
     private Boolean requestModeration;
 
-    @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
+    @OneToOne(targetEntity = User.class)
     private User initiator;
 
     @Enumerated(EnumType.STRING)

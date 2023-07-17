@@ -1,10 +1,11 @@
-package ru.practicum.service;
+package ru.practicum.service.implementations;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.client.StatisticsClient;
 import ru.practicum.dto.HitResponseDto;
+import ru.practicum.service.interfaces.StatisticsService;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
@@ -17,13 +18,15 @@ import static ru.practicum.common.Variables.GLOBAL_DATE_FORMATTER;
 
 @Service
 @RequiredArgsConstructor
-public class StatisticsService {
+public class StatisticsServiceImpl implements StatisticsService {
     private final StatisticsClient statisticsClient;
 
+    @Override
     public void saveStatistics(HttpServletRequest request) throws JsonProcessingException {
         statisticsClient.saveStatistics(APP_NAME, request.getRequestURI(), request.getRemoteAddr());
     }
 
+    @Override
     public List<HitResponseDto> getStatistics(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
         String startString;
         String endString;
