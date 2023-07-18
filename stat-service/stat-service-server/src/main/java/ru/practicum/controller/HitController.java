@@ -1,7 +1,7 @@
 package ru.practicum.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,21 +19,26 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 public class HitController {
     private final HitService hitService;
 
     @PostMapping("/hit")
     @ResponseStatus(HttpStatus.CREATED)
     public void saveHit(@NotNull @RequestBody HitRequestDto hitRequestDto) {
+        log.debug("POST /hit - Saving hit: {}", hitRequestDto);
+
         hitService.saveHit(hitRequestDto);
     }
 
     @GetMapping("/stats")
     public List<HitResponseDto> getStatistics(
-            @NotNull @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
-            @NotNull @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
+            @NotNull @RequestParam LocalDateTime start,
+            @NotNull @RequestParam LocalDateTime end,
             @RequestParam(defaultValue = "") List<String> uris,
             @RequestParam(defaultValue = "false") Boolean unique) {
+        log.debug("GET /stats - Getting statistics with params: start={}, end={}, uris={}, unique={}", start,
+                end, uris, unique);
 
         return hitService.getStatistics(start, end, uris, unique);
     }
