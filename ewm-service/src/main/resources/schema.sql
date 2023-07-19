@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS events (
     request_moderation BOOLEAN NOT NULL DEFAULT TRUE,
     initiator_id BIGINT NOT NULL,
     state VARCHAR(20) NOT NULL,
+    review_comment VARCHAR(200),
 
     CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES category (id),
     CONSTRAINT fk_initiator FOREIGN KEY (initiator_id) REFERENCES users (id)

@@ -28,4 +28,7 @@ public interface EventRepository extends JpaRepository<Event, Long>, QuerydslPre
             " ) AS a" +
             " WHERE a.available", nativeQuery = true)
     List<Long> findAvailableEventIds();
+
+    @Query("SELECT e.state, COUNT(e) AS count FROM Event e GROUP BY e.state")
+    List<Object[]> getEventCountByState();
 }

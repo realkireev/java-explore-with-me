@@ -37,4 +37,5 @@ public class EventResponseDto {
     private EventState state;
     private String title;
     private Long views;
+    private String reviewComment;
 }

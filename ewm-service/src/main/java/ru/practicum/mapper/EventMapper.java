@@ -36,5 +36,6 @@ public interface EventMapper {
     @Mapping(source = "eventUpdateRequestDto.paid", target = "event.paid")
     @Mapping(source = "eventUpdateRequestDto.participantLimit", target = "event.participantLimit")
     @Mapping(source = "eventUpdateRequestDto.requestModeration", target = "event.requestModeration")
+    @Mapping(source = "eventUpdateRequestDto.reviewComment", target = "event.reviewComment")
     void toEvent(EventUpdateRequestDto eventUpdateRequestDto, @MappingTarget Event event);
 }

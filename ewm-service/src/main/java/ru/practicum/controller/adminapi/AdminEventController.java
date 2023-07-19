@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ru.practicum.dto.EventCountByStateDto;
 import ru.practicum.dto.EventResponseDto;
 import ru.practicum.dto.EventUpdateRequestDto;
 import ru.practicum.model.EventState;
@@ -49,11 +50,39 @@ public class AdminEventController {
         return eventService.getEvents(users, states, categories, rangeStart, rangeEnd, from, size);
     }
 
-    @PatchMapping(path = "/{eventId}")
-    public EventResponseDto publishOrCancelEvent(@PathVariable Long eventId,
-                                                 @RequestBody EventUpdateRequestDto eventUpdateRequestDto) {
-        log.debug("PATCH /admin/events/{} - Publishing or cancelling event: {}", eventId, eventUpdateRequestDto);
+    @GetMapping(path = "/pending")
+    public List<EventResponseDto> getPendingEvents(
+            @RequestParam(defaultValue = FROM_DEFAULT) @PositiveOrZero(message = FROM_BELOW_ZERO_MESSAGE) int from,
+            @RequestParam(defaultValue = SIZE_DEFAULT) @Positive(message = SIZE_NOT_POSITIVE_MESSAGE) int size) {
+        log.debug("GET /admin/events/pending - Getting pending events with params: from={}, size={}", from, size);
 
-        return eventService.publishOrCancelEvent(eventId, eventUpdateRequestDto);
+        return eventService.getEvents(null, List.of(EventState.PENDING), null, null, null, from,
+                size);
+    }
+
+    @GetMapping(path = "/under-revision")
+    public List<EventResponseDto> getEventsUnderRevision(
+            @RequestParam(defaultValue = FROM_DEFAULT) @PositiveOrZero(message = FROM_BELOW_ZERO_MESSAGE) int from,
+            @RequestParam(defaultValue = SIZE_DEFAULT) @Positive(message = SIZE_NOT_POSITIVE_MESSAGE) int size) {
+        log.debug("GET /admin/events/under-revision - Getting events under revision with params: from={}, size={}",
+                from, size);
+
+        return eventService.getEvents(null, List.of(EventState.UNDER_REVISION), null, null, null,
+                from, size);
+    }
+
+    @GetMapping(path = "/statistics")
+    public List<EventCountByStateDto> getEventCountByState() {
+        log.debug("GET /admin/events/statistics - Getting statistics of events by state");
+
+        return eventService.getEventCountByState();
+    }
+
+    @PatchMapping(path = "/{eventId}")
+    public EventResponseDto handleEventPublication(@PathVariable Long eventId,
+                                                   @RequestBody EventUpdateRequestDto eventUpdateRequestDto) {
+        log.debug("PATCH /admin/events/{} - Handling event publication: {}", eventId, eventUpdateRequestDto);
+
+        return eventService.handleEventPublication(eventId, eventUpdateRequestDto);
     }
 }

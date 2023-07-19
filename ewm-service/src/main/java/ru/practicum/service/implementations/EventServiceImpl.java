@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.common.CustomPageRequest;
 import ru.practicum.common.CustomValidator;
+import ru.practicum.dto.EventCountByStateDto;
 import ru.practicum.dto.EventRequestDto;
 import ru.practicum.dto.EventResponseDto;
 import ru.practicum.dto.EventUpdateRequestDto;
@@ -29,6 +30,7 @@ import ru.practicum.service.interfaces.EventService;
 import ru.practicum.service.interfaces.StatisticsService;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -182,6 +184,7 @@ public class EventServiceImpl implements EventService {
         if (stateAction != null) {
             switch (getAction(eventUpdateRequestDto)) {
                 case SEND_TO_REVIEW:
+                    eventMapper.toEvent(eventUpdateRequestDto, storedEvent);
                     storedEvent.setState(EventState.PENDING);
                     break;
 
@@ -197,34 +200,32 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventResponseDto publishOrCancelEvent(Long eventId, EventUpdateRequestDto eventUpdateRequestDto) {
+    public EventResponseDto handleEventPublication(Long eventId, EventUpdateRequestDto eventUpdateRequestDto) {
         CustomValidator.validate(eventUpdateRequestDto);
 
         Event storedEvent = findEventById(eventId);
         eventMapper.toEvent(eventUpdateRequestDto, storedEvent);
 
         Action stateAction = eventUpdateRequestDto.getStateAction();
+
         if (stateAction != null) {
+            validateActionOnEvent(storedEvent.getState(), stateAction);
+
             switch (stateAction) {
                 case PUBLISH_EVENT:
-                    if (storedEvent.getState().equals(EventState.PUBLISHED)) {
-                        throw new IllegalActionException("Event is already published.");
-                    }
-
-                    if (storedEvent.getState().equals(EventState.CANCELED)) {
-                        throw new IllegalActionException("Impossible to publish a cancelled event.");
-                    }
-
+                    storedEvent.setReviewComment(null);
                     storedEvent.setState(EventState.PUBLISHED);
                     storedEvent.setPublishedOn(LocalDateTime.now());
                     break;
 
                 case REJECT_EVENT:
-                    if (storedEvent.getState().equals(EventState.PUBLISHED)) {
-                        throw new IllegalActionException("Impossible to cancel a published event.");
-                    }
-
                     storedEvent.setState(EventState.CANCELED);
+                    storedEvent.setReviewComment(eventUpdateRequestDto.getReviewComment());
+                    break;
+
+                case SEND_EVENT_FOR_REVISION:
+                    storedEvent.setState(EventState.UNDER_REVISION);
+                    storedEvent.setReviewComment(eventUpdateRequestDto.getReviewComment());
                     break;
             }
         }
@@ -236,6 +237,11 @@ public class EventServiceImpl implements EventService {
     public Event findEventById(Long eventId) {
         return eventRepository.findById(eventId).orElseThrow(
                 () -> new ObjectNotFoundException(EVENT_WAS_NOT_FOUND_MESSAGE, eventId));
+    }
+
+    @Override
+    public List<EventCountByStateDto> getEventCountByState() {
+        return toEventCountByStateDto(eventRepository.getEventCountByState());
     }
 
     private EventResponseDto addStatistics(EventResponseDto erd, LocalDateTime start, LocalDateTime end) {
@@ -299,5 +305,23 @@ public class EventServiceImpl implements EventService {
         if (!userRepository.existsById(userId)) {
             throw new ObjectNotFoundException(USER_WAS_NOT_FOUND_MESSAGE, userId);
         }
+    }
+
+    private void validateActionOnEvent(EventState eventState, Action action) {
+        if (eventState.equals(EventState.PUBLISHED) || eventState.equals(EventState.CANCELED)) {
+            throw new IllegalActionException("Illegal action: " + action + " for a " + eventState + " event.");
+        }
+    }
+
+    private List<EventCountByStateDto> toEventCountByStateDto(List<Object[]> result) {
+        List<EventCountByStateDto> list = new ArrayList<>();
+
+        result.forEach(x -> {
+            EventCountByStateDto eventCountByStateDto = new EventCountByStateDto((EventState) x[0],
+                    ((Long) x[1]));
+            list.add(eventCountByStateDto);
+        });
+
+        return list;
     }
 }
