@@ -7,30 +7,32 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.common.CustomPageRequest;
 import ru.practicum.common.CustomValidator;
-import ru.practicum.dto.EventCountByStateDto;
 import ru.practicum.dto.EventRequestDto;
 import ru.practicum.dto.EventResponseDto;
+import ru.practicum.dto.EventStatisticsDto;
 import ru.practicum.dto.EventUpdateRequestDto;
 import ru.practicum.dto.HitResponseDto;
 import ru.practicum.exception.IllegalActionException;
 import ru.practicum.exception.IllegalParametersException;
 import ru.practicum.exception.ObjectNotFoundException;
 import ru.practicum.mapper.EventMapper;
+import ru.practicum.mapper.EventStatisticsMapper;
 import ru.practicum.model.Action;
 import ru.practicum.model.Event;
 import ru.practicum.model.EventState;
+import ru.practicum.model.EventStatistics;
 import ru.practicum.model.QEvent;
 import ru.practicum.model.RequestStatus;
 import ru.practicum.model.SortType;
 import ru.practicum.model.User;
 import ru.practicum.repo.EventRepository;
+import ru.practicum.repo.EventStatisticsRepository;
 import ru.practicum.repo.RequestRepository;
 import ru.practicum.repo.UserRepository;
 import ru.practicum.service.interfaces.EventService;
 import ru.practicum.service.interfaces.StatisticsService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +48,8 @@ public class EventServiceImpl implements EventService {
     private final EventMapper eventMapper;
     private final UserRepository userRepository;
     private final RequestRepository requestRepository;
+    private final EventStatisticsRepository eventStatisticsRepository;
+    private final EventStatisticsMapper eventStatisticsMapper;
     private final StatisticsService statisticsService;
 
     @Override
@@ -163,7 +167,7 @@ public class EventServiceImpl implements EventService {
         Event event = eventMapper.toEvent(eventRequestDto);
         event.setInitiator(user);
         event.setCreatedOn(LocalDateTime.now());
-        event.setState(EventState.PENDING);
+        setStateAndCountStatistics(event, EventState.PENDING);
 
         return eventMapper.toEventResponseDto(eventRepository.saveAndFlush(event));
     }
@@ -185,12 +189,12 @@ public class EventServiceImpl implements EventService {
             switch (getAction(eventUpdateRequestDto)) {
                 case SEND_TO_REVIEW:
                     eventMapper.toEvent(eventUpdateRequestDto, storedEvent);
-                    storedEvent.setState(EventState.PENDING);
+                    setStateAndCountStatistics(storedEvent, EventState.PENDING);
                     break;
 
                 case REJECT_EVENT:
                 case CANCEL_REVIEW:
-                    storedEvent.setState(EventState.CANCELED);
+                    setStateAndCountStatistics(storedEvent, EventState.CANCELED);
                     break;
             }
         }
@@ -214,17 +218,17 @@ public class EventServiceImpl implements EventService {
             switch (stateAction) {
                 case PUBLISH_EVENT:
                     storedEvent.setReviewComment(null);
-                    storedEvent.setState(EventState.PUBLISHED);
                     storedEvent.setPublishedOn(LocalDateTime.now());
+                    setStateAndCountStatistics(storedEvent, EventState.PUBLISHED);
                     break;
 
                 case REJECT_EVENT:
-                    storedEvent.setState(EventState.CANCELED);
+                    setStateAndCountStatistics(storedEvent, EventState.CANCELED);
                     storedEvent.setReviewComment(eventUpdateRequestDto.getReviewComment());
                     break;
 
                 case SEND_EVENT_FOR_REVISION:
-                    storedEvent.setState(EventState.UNDER_REVISION);
+                    setStateAndCountStatistics(storedEvent, EventState.UNDER_REVISION);
                     storedEvent.setReviewComment(eventUpdateRequestDto.getReviewComment());
                     break;
             }
@@ -240,8 +244,8 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventCountByStateDto> getEventCountByState() {
-        return toEventCountByStateDto(eventRepository.getEventCountByState());
+    public List<EventStatisticsDto> getEventCountByState() {
+        return eventStatisticsMapper.toEventStatisticsDto(eventStatisticsRepository.findAll());
     }
 
     private EventResponseDto addStatistics(EventResponseDto erd, LocalDateTime start, LocalDateTime end) {
@@ -313,15 +317,24 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private List<EventCountByStateDto> toEventCountByStateDto(List<Object[]> result) {
-        List<EventCountByStateDto> list = new ArrayList<>();
+    private void setStateAndCountStatistics(Event event, EventState newState) {
+        EventState oldState = event.getState();
+        if (oldState != null) {
+            saveStatistics(oldState, -1);
+        }
 
-        result.forEach(x -> {
-            EventCountByStateDto eventCountByStateDto = new EventCountByStateDto((EventState) x[0],
-                    ((Long) x[1]));
-            list.add(eventCountByStateDto);
-        });
+        saveStatistics(newState, 1);
+        event.setState(newState);
+    }
 
-        return list;
+    private void saveStatistics(EventState eventState, long increment) {
+        EventStatistics eventStatistics = eventStatisticsRepository.findById(eventState)
+                .orElse(EventStatistics.builder()
+                        .state(eventState)
+                        .count(0L)
+                        .build());
+
+        eventStatistics.setCount(eventStatistics.getCount() + increment);
+        eventStatisticsRepository.saveAndFlush(eventStatistics);
     }
 }

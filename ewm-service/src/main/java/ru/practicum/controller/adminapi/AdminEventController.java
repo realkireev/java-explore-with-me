@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import ru.practicum.dto.EventCountByStateDto;
+import ru.practicum.dto.EventStatisticsDto;
 import ru.practicum.dto.EventResponseDto;
 import ru.practicum.dto.EventUpdateRequestDto;
 import ru.practicum.model.EventState;
@@ -72,7 +72,7 @@ public class AdminEventController {
     }
 
     @GetMapping(path = "/statistics")
-    public List<EventCountByStateDto> getEventCountByState() {
+    public List<EventStatisticsDto> getEventCountByState() {
         log.debug("GET /admin/events/statistics - Getting statistics of events by state");
 
         return eventService.getEventCountByState();

@@ -10,7 +10,7 @@ import ru.practicum.model.EventState;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventCountByStateDto {
+public class EventStatisticsDto {
     private EventState state;
     private Long count;
 }

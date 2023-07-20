@@ -1556,7 +1556,7 @@
 							"            cancelFound = true;\r",
 							"        } else if (item.state === \"PUBLISHED\") {\r",
 							"            publishedFound = true;\r",
-							"        } else if (item.state === \"UNDER_REVISION\") {\r",
+							"        } else if (item.state === \"UNDER_REVISION\" && item.count > 0) {\r",
 							"            underRevisionFound = true;\r",
 							"        }\r",
 							"    });\r",
