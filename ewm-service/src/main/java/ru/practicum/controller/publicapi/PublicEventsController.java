@@ -14,11 +14,15 @@ import ru.practicum.service.interfaces.EventService;
 import ru.practicum.service.interfaces.StatisticsService;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static ru.practicum.common.Variables.FROM_BELOW_ZERO_MESSAGE;
 import static ru.practicum.common.Variables.FROM_DEFAULT;
 import static ru.practicum.common.Variables.SIZE_DEFAULT;
+import static ru.practicum.common.Variables.SIZE_NOT_POSITIVE_MESSAGE;
 
 @RestController
 @RequestMapping(path = "/events")
@@ -37,8 +41,8 @@ public class PublicEventsController {
             @RequestParam(required = false) LocalDateTime rangeEnd,
             @RequestParam(defaultValue = "false") Boolean onlyAvailable,
             @RequestParam(required = false) SortType sort,
-            @RequestParam(defaultValue = FROM_DEFAULT) int from,
-            @RequestParam(defaultValue = SIZE_DEFAULT) int size,
+            @RequestParam(defaultValue = FROM_DEFAULT) @PositiveOrZero(message = FROM_BELOW_ZERO_MESSAGE) int from,
+            @RequestParam(defaultValue = SIZE_DEFAULT) @Positive(message = SIZE_NOT_POSITIVE_MESSAGE) int size,
             HttpServletRequest request) throws JsonProcessingException {
         log.debug("GET /events - Getting events with params: text={}, categories={}, paid={}, rangeStart={}, " +
                 "rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}", text, categories, paid, rangeStart, rangeEnd,

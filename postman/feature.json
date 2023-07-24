@@ -1,0 +1,1594 @@
+{
+	"info": {
+		"_postman_id": "76bd1b22-1808-4ebf-b466-d59d2a063082",
+		"name": "Test feature: moderation_enhancement",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "22818747"
+	},
+	"item": [
+		{
+			"name": "Create user",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var randomName = 'User_' + Math.random().toString(36).substring(7);\r",
+							"var randomEmail = randomName + '@example.com';\r",
+							"\r",
+							"postman.setEnvironmentVariable('randomName', randomName);\r",
+							"postman.setEnvironmentVariable('randomEmail', randomEmail);\r",
+							"\r",
+							"console.log('Generated random name:', randomName);\r",
+							"console.log('Generated random email:', randomEmail);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have fields: id, email, name\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'email', 'name');\r",
+							"});\r",
+							"\r",
+							"var expectedName = pm.environment.get('randomName');\r",
+							"var expectedEmail = pm.environment.get('randomEmail');\r",
+							"\r",
+							"pm.test('Response must have a correct name', function() {\r",
+							"    pm.expect(result.name).to.equal(expectedName);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct email', function() {\r",
+							"    pm.expect(result.email).to.equal(expectedEmail);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.globals.set(\"userId\", result.id);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"{{randomName}}\",\r\n    \"email\": \"{{randomEmail}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/admin/users",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create category",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var randomName = 'Category_' + Math.random().toString(36).substring(7);\r",
+							"postman.setEnvironmentVariable('randomName', randomName);\r",
+							"console.log('Generated random name:', randomName);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have fields: id, name\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'name');\r",
+							"});\r",
+							"\r",
+							"var expectedName = pm.environment.get('randomName');\r",
+							"pm.test('Response must have a correct name', function() {\r",
+							"    pm.expect(result.name).to.equal(expectedName);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.globals.set(\"categoryId\", result.id);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"{{randomName}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/admin/categories",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"categories"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create event 1",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var annotation = 'Annotation_' + Math.random().toString().substring(5);\r",
+							"var description = 'Description_' + Math.random().toString().substring(5);\r",
+							"var title = 'Title_' + Math.random().toString().substring(5);\r",
+							"\r",
+							"postman.setEnvironmentVariable('annotation', annotation);\r",
+							"postman.setEnvironmentVariable('description', description);\r",
+							"postman.setEnvironmentVariable('title', title);\r",
+							"\r",
+							"console.log('Generated annotation:', annotation);\r",
+							"console.log('Generated description:', description);\r",
+							"console.log('Generated title:', title);"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.globals.set(\"eventId\", result.id);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"annotation\": \"{{annotation}}\",\r\n    \"description\": \"{{description}}\",\r\n    \"title\": \"{{title}}\",\r\n    \"category\": {{categoryId}},\r\n    \"eventDate\": \"2023-12-31 23:59:59\",\r\n    \"paid\": true,\r\n    \"participantLimit\": 20,\r\n    \"location\": {\r\n        \"lat\": 45.0123,\r\n        \"lon\": -17.2256\r\n    },\r\n    \"requestModeration\": true\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/users/{{userId}}/events",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"{{userId}}",
+						"events"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin publishes event 1",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"\r",
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null publishedOn', function() {\r",
+							"    pm.expect(result.publishedOn).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have state PUBLISHED', function() {\r",
+							"    pm.expect(result.state).to.equal('PUBLISHED');\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"stateAction\": \"PUBLISH_EVENT\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/admin/events/{{eventId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"{{eventId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin publishes a published event",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var randomName = 'User_' + Math.random().toString(36).substring(7);\r",
+							"var randomEmail = randomName + '@example.com';\r",
+							"\r",
+							"postman.setEnvironmentVariable('randomName', randomName);\r",
+							"postman.setEnvironmentVariable('randomEmail', randomEmail);\r",
+							"\r",
+							"console.log('Generated random name:', randomName);\r",
+							"console.log('Generated random email:', randomEmail);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code must be 409\", function () {\r",
+							"    pm.response.to.have.status(409);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('status', 'reason', 'message', 'timestamp');\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"stateAction\": \"PUBLISH_EVENT\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/admin/events/{{eventId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"{{eventId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create event 2",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var annotation = 'Annotation_' + Math.random().toString().substring(5);\r",
+							"var description = 'Description_' + Math.random().toString().substring(5);\r",
+							"var title = 'Title_' + Math.random().toString().substring(5);\r",
+							"\r",
+							"postman.setEnvironmentVariable('annotation', annotation);\r",
+							"postman.setEnvironmentVariable('description', description);\r",
+							"postman.setEnvironmentVariable('title', title);\r",
+							"\r",
+							"console.log('Generated annotation:', annotation);\r",
+							"console.log('Generated description:', description);\r",
+							"console.log('Generated title:', title);"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.globals.set(\"eventId\", result.id);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"annotation\": \"{{annotation}}\",\r\n    \"description\": \"{{description}}\",\r\n    \"title\": \"{{title}}\",\r\n    \"category\": {{categoryId}},\r\n    \"eventDate\": \"2024-01-06 15:45:00\",\r\n    \"paid\": false,\r\n    \"participantLimit\": 20,\r\n    \"location\": {\r\n        \"lat\": -25.0777,\r\n        \"lon\": 176.3415\r\n    },\r\n    \"requestModeration\": true\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/users/{{userId}}/events",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"{{userId}}",
+						"events"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin rejects event 2",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"\r",
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a null publishedOn', function() {\r",
+							"    pm.expect(result.publishedOn).to.be.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have state CANCELED', function() {\r",
+							"    pm.expect(result.state).to.equal('CANCELED');\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"stateAction\": \"REJECT_EVENT\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/admin/events/{{eventId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"{{eventId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create event 3",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var annotation = 'Annotation_' + Math.random().toString().substring(5);\r",
+							"var description = 'Description_' + Math.random().toString().substring(5);\r",
+							"var title = 'Title_' + Math.random().toString().substring(5);\r",
+							"\r",
+							"postman.setEnvironmentVariable('annotation', annotation);\r",
+							"postman.setEnvironmentVariable('description', description);\r",
+							"postman.setEnvironmentVariable('title', title);\r",
+							"\r",
+							"console.log('Generated annotation:', annotation);\r",
+							"console.log('Generated description:', description);\r",
+							"console.log('Generated title:', title);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.globals.set(\"eventId\", result.id);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"annotation\": \"{{annotation}}\",\r\n    \"description\": \"{{description}}\",\r\n    \"title\": \"{{title}}\",\r\n    \"category\": {{categoryId}},\r\n    \"eventDate\": \"2024-01-06 15:45:00\",\r\n    \"paid\": false,\r\n    \"participantLimit\": 20,\r\n    \"location\": {\r\n        \"lat\": -25.0777,\r\n        \"lon\": 176.3415\r\n    },\r\n    \"requestModeration\": true\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/users/{{userId}}/events",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"{{userId}}",
+						"events"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get PENDING events from new endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Array.size must be 10\", function () {\r",
+							"    pm.expect(result.length).to.eql(10);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"All events must have state PENDING\", function () {\r",
+							"    result.forEach(function (item) {\r",
+							"        pm.expect(item.state).to.eql(\"PENDING\");\r",
+							"    });\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/admin/events/pending",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"pending"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get PENDING events with size from new endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Array.size must be 3\", function () {\r",
+							"    pm.expect(result.length).to.eql(3);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"All events must have state PENDING\", function () {\r",
+							"    result.forEach(function (item) {\r",
+							"        pm.expect(item.state).to.eql(\"PENDING\");\r",
+							"    });\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/admin/events/pending?size=3",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"pending"
+					],
+					"query": [
+						{
+							"key": "size",
+							"value": "3"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get UNDER_REVISION events from new endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Array.size must be 0\", function () {\r",
+							"    pm.expect(result.length).to.eql(0);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/admin/events/under-revision",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"under-revision"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin sends back event 3 for revision with comment",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"\r",
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a null publishedOn', function() {\r",
+							"    pm.expect(result.publishedOn).to.be.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have state UNDER_REVISION', function() {\r",
+							"    pm.expect(result.state).to.equal('UNDER_REVISION');\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct reviewComment', function() {\r",
+							"    pm.expect(result.reviewComment).to.equal('Please correct the exact location.');\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"stateAction\": \"SEND_EVENT_FOR_REVISION\",\r\n    \"reviewComment\": \"Please correct the exact location.\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/admin/events/{{eventId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"{{eventId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get UNDER_REVISION events from new endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Array.size must be 1\", function () {\r",
+							"    pm.expect(result.length).to.eql(1);\r",
+							"});\r",
+							"\r",
+							"var element = result[0];\r",
+							"\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(element).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(element.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(element.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(element.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(element.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have state UNDER_REVISION', function() {\r",
+							"    pm.expect(element.state).to.equal('UNDER_REVISION');\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have reviewComment', function() {\r",
+							"    pm.expect(element.reviewComment).to.equal('Please correct the exact location.');\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/admin/events/under-revision",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"under-revision"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get statistics, must be one UNDER_REVISION",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"\r",
+							"pm.test(\"The object must have states: PENDING, CANCELED, PUBLISHED and must not have UNDER_REVISION\", function () {\r",
+							"    var pendingFound = false;\r",
+							"    var cancelFound = false;\r",
+							"    var publishedFound = false;\r",
+							"    var underRevisionFound = false;\r",
+							"\r",
+							"    result.forEach(function (item) {\r",
+							"        if (item.state === \"PENDING\") {\r",
+							"            pendingFound = true;\r",
+							"        } else if (item.state === \"CANCELED\") {\r",
+							"            cancelFound = true;\r",
+							"        } else if (item.state === \"PUBLISHED\") {\r",
+							"            publishedFound = true;\r",
+							"        } else if (item.state === \"UNDER_REVISION\" && item.count == 1) {\r",
+							"            underRevisionFound = true;\r",
+							"        }\r",
+							"    });\r",
+							"\r",
+							"    pm.expect(pendingFound).to.be.true;\r",
+							"    pm.expect(cancelFound).to.be.true;\r",
+							"    pm.expect(publishedFound).to.be.true;\r",
+							"    pm.expect(underRevisionFound).to.be.true;\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/admin/events/statistics",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"statistics"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get event UNDER_REVISION from a public gateway",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code must be 404\", function () {\r",
+							"    pm.response.to.have.status(404);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/events/{{eventId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"events",
+						"{{eventId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get event UNDER_REVISION from a users gateway",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have state UNDER_REVISION', function() {\r",
+							"    pm.expect(result.state).to.equal('UNDER_REVISION');\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have reviewComment', function() {\r",
+							"    pm.expect(result.reviewComment).to.equal('Please correct the exact location.');\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/users/{{userId}}/events/{{eventId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"{{userId}}",
+						"events",
+						"{{eventId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get event UNDER_REVISION from a admin gateway",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json()[0];\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have state UNDER_REVISION', function() {\r",
+							"    pm.expect(result.state).to.equal('UNDER_REVISION');\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have reviewComment', function() {\r",
+							"    pm.expect(result.reviewComment).to.equal('Please correct the exact location.');\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/admin/events?users={{userId}}&states=UNDER_REVISION",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events"
+					],
+					"query": [
+						{
+							"key": "users",
+							"value": "{{userId}}"
+						},
+						{
+							"key": "states",
+							"value": "UNDER_REVISION"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "User fixes event 3",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct location.lat', function() {\r",
+							"    pm.expect(result.location.lat).to.equal(45.7777);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct location.lon', function() {\r",
+							"    pm.expect(result.location.lon).to.equal(-17.7777);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"location\": {\r\n        \"lat\": 45.7777,\r\n        \"lon\": -17.7777\r\n    },\r\n    \"stateAction\": \"SEND_TO_REVIEW\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/users/{{userId}}/events/{{eventId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"{{userId}}",
+						"events",
+						"{{eventId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "UNDER_REVISION events size must be 0",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Array.size must be 0\", function () {\r",
+							"    pm.expect(result.length).to.eql(0);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/admin/events/under-revision",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"under-revision"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin publishes event 3",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"\r",
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"pm.test(\"Response must have all fields\", function () {\r",
+							"    pm.expect(result).to.have.all.keys('id', 'annotation', 'category', 'confirmedRequests', 'createdOn', 'description', 'eventDate', 'initiator', 'location', 'paid', 'participantLimit', 'publishedOn', 'requestModeration', 'state', 'title', 'views', 'reviewComment');\r",
+							"});\r",
+							"\r",
+							"var expectedAnnotation = pm.environment.get('annotation');\r",
+							"var expectedDescription = pm.environment.get('description');\r",
+							"var expectedTitle = pm.environment.get('title');\r",
+							"\r",
+							"pm.test('Response must have a correct annotation', function() {\r",
+							"    pm.expect(result.annotation).to.equal(expectedAnnotation);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct description', function() {\r",
+							"    pm.expect(result.description).to.equal(expectedDescription);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a correct title', function() {\r",
+							"    pm.expect(result.title).to.equal(expectedTitle);\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null id', function() {\r",
+							"    pm.expect(result.id).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have a not null publishedOn', function() {\r",
+							"    pm.expect(result.publishedOn).to.not.null;\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have state PUBLISHED', function() {\r",
+							"    pm.expect(result.state).to.equal('PUBLISHED');\r",
+							"});\r",
+							"\r",
+							"pm.test('Response must have reviewComment == null', function() {\r",
+							"    pm.expect(result.reviewComment).to.null;\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"stateAction\": \"PUBLISH_EVENT\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/admin/events/{{eventId}}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"{{eventId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get statistics, must not have UNDER_REVISION",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Response must have successful status and a json-formatted body\", function () {\r",
+							"    pm.response.to.be.success;  \r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code must be 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const result = pm.response.json();\r",
+							"\r",
+							"pm.test(\"The object must have states: PENDING, CANCELED, PUBLISHED and must not have UNDER_REVISION\", function () {\r",
+							"    var pendingFound = false;\r",
+							"    var cancelFound = false;\r",
+							"    var publishedFound = false;\r",
+							"    var underRevisionFound = false;\r",
+							"\r",
+							"    result.forEach(function (item) {\r",
+							"        if (item.state === \"PENDING\") {\r",
+							"            pendingFound = true;\r",
+							"        } else if (item.state === \"CANCELED\") {\r",
+							"            cancelFound = true;\r",
+							"        } else if (item.state === \"PUBLISHED\") {\r",
+							"            publishedFound = true;\r",
+							"        } else if (item.state === \"UNDER_REVISION\" && item.count > 0) {\r",
+							"            underRevisionFound = true;\r",
+							"        }\r",
+							"    });\r",
+							"\r",
+							"    pm.expect(pendingFound).to.be.true;\r",
+							"    pm.expect(cancelFound).to.be.true;\r",
+							"    pm.expect(publishedFound).to.be.true;\r",
+							"    pm.expect(underRevisionFound).to.be.false;\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/admin/events/statistics",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"events",
+						"statistics"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

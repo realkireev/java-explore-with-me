@@ -9,20 +9,24 @@ import ru.practicum.common.CustomPageRequest;
 import ru.practicum.common.CustomValidator;
 import ru.practicum.dto.EventRequestDto;
 import ru.practicum.dto.EventResponseDto;
+import ru.practicum.dto.EventStatisticsDto;
 import ru.practicum.dto.EventUpdateRequestDto;
 import ru.practicum.dto.HitResponseDto;
 import ru.practicum.exception.IllegalActionException;
 import ru.practicum.exception.IllegalParametersException;
 import ru.practicum.exception.ObjectNotFoundException;
 import ru.practicum.mapper.EventMapper;
+import ru.practicum.mapper.EventStatisticsMapper;
 import ru.practicum.model.Action;
 import ru.practicum.model.Event;
 import ru.practicum.model.EventState;
+import ru.practicum.model.EventStatistics;
 import ru.practicum.model.QEvent;
 import ru.practicum.model.RequestStatus;
 import ru.practicum.model.SortType;
 import ru.practicum.model.User;
 import ru.practicum.repo.EventRepository;
+import ru.practicum.repo.EventStatisticsRepository;
 import ru.practicum.repo.RequestRepository;
 import ru.practicum.repo.UserRepository;
 import ru.practicum.service.interfaces.EventService;
@@ -44,6 +48,8 @@ public class EventServiceImpl implements EventService {
     private final EventMapper eventMapper;
     private final UserRepository userRepository;
     private final RequestRepository requestRepository;
+    private final EventStatisticsRepository eventStatisticsRepository;
+    private final EventStatisticsMapper eventStatisticsMapper;
     private final StatisticsService statisticsService;
 
     @Override
@@ -161,7 +167,7 @@ public class EventServiceImpl implements EventService {
         Event event = eventMapper.toEvent(eventRequestDto);
         event.setInitiator(user);
         event.setCreatedOn(LocalDateTime.now());
-        event.setState(EventState.PENDING);
+        setStateAndCountStatistics(event, EventState.PENDING);
 
         return eventMapper.toEventResponseDto(eventRepository.saveAndFlush(event));
     }
@@ -182,12 +188,13 @@ public class EventServiceImpl implements EventService {
         if (stateAction != null) {
             switch (getAction(eventUpdateRequestDto)) {
                 case SEND_TO_REVIEW:
-                    storedEvent.setState(EventState.PENDING);
+                    eventMapper.toEvent(eventUpdateRequestDto, storedEvent);
+                    setStateAndCountStatistics(storedEvent, EventState.PENDING);
                     break;
 
                 case REJECT_EVENT:
                 case CANCEL_REVIEW:
-                    storedEvent.setState(EventState.CANCELED);
+                    setStateAndCountStatistics(storedEvent, EventState.CANCELED);
                     break;
             }
         }
@@ -197,34 +204,32 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventResponseDto publishOrCancelEvent(Long eventId, EventUpdateRequestDto eventUpdateRequestDto) {
+    public EventResponseDto handleEventPublication(Long eventId, EventUpdateRequestDto eventUpdateRequestDto) {
         CustomValidator.validate(eventUpdateRequestDto);
 
         Event storedEvent = findEventById(eventId);
         eventMapper.toEvent(eventUpdateRequestDto, storedEvent);
 
         Action stateAction = eventUpdateRequestDto.getStateAction();
+
         if (stateAction != null) {
+            validateActionOnEvent(storedEvent.getState(), stateAction);
+
             switch (stateAction) {
                 case PUBLISH_EVENT:
-                    if (storedEvent.getState().equals(EventState.PUBLISHED)) {
-                        throw new IllegalActionException("Event is already published.");
-                    }
-
-                    if (storedEvent.getState().equals(EventState.CANCELED)) {
-                        throw new IllegalActionException("Impossible to publish a cancelled event.");
-                    }
-
-                    storedEvent.setState(EventState.PUBLISHED);
+                    storedEvent.setReviewComment(null);
                     storedEvent.setPublishedOn(LocalDateTime.now());
+                    setStateAndCountStatistics(storedEvent, EventState.PUBLISHED);
                     break;
 
                 case REJECT_EVENT:
-                    if (storedEvent.getState().equals(EventState.PUBLISHED)) {
-                        throw new IllegalActionException("Impossible to cancel a published event.");
-                    }
+                    setStateAndCountStatistics(storedEvent, EventState.CANCELED);
+                    storedEvent.setReviewComment(eventUpdateRequestDto.getReviewComment());
+                    break;
 
-                    storedEvent.setState(EventState.CANCELED);
+                case SEND_EVENT_FOR_REVISION:
+                    setStateAndCountStatistics(storedEvent, EventState.UNDER_REVISION);
+                    storedEvent.setReviewComment(eventUpdateRequestDto.getReviewComment());
                     break;
             }
         }
@@ -236,6 +241,11 @@ public class EventServiceImpl implements EventService {
     public Event findEventById(Long eventId) {
         return eventRepository.findById(eventId).orElseThrow(
                 () -> new ObjectNotFoundException(EVENT_WAS_NOT_FOUND_MESSAGE, eventId));
+    }
+
+    @Override
+    public List<EventStatisticsDto> getEventCountByState() {
+        return eventStatisticsMapper.toEventStatisticsDto(eventStatisticsRepository.findAll());
     }
 
     private EventResponseDto addStatistics(EventResponseDto erd, LocalDateTime start, LocalDateTime end) {
@@ -299,5 +309,32 @@ public class EventServiceImpl implements EventService {
         if (!userRepository.existsById(userId)) {
             throw new ObjectNotFoundException(USER_WAS_NOT_FOUND_MESSAGE, userId);
         }
+    }
+
+    private void validateActionOnEvent(EventState eventState, Action action) {
+        if (eventState.equals(EventState.PUBLISHED) || eventState.equals(EventState.CANCELED)) {
+            throw new IllegalActionException("Illegal action: " + action + " for a " + eventState + " event.");
+        }
+    }
+
+    private void setStateAndCountStatistics(Event event, EventState newState) {
+        EventState oldState = event.getState();
+        if (oldState != null) {
+            saveStatistics(oldState, -1);
+        }
+
+        saveStatistics(newState, 1);
+        event.setState(newState);
+    }
+
+    private void saveStatistics(EventState eventState, long increment) {
+        EventStatistics eventStatistics = eventStatisticsRepository.findById(eventState)
+                .orElse(EventStatistics.builder()
+                        .state(eventState)
+                        .count(0L)
+                        .build());
+
+        eventStatistics.setCount(eventStatistics.getCount() + increment);
+        eventStatisticsRepository.saveAndFlush(eventStatistics);
     }
 }

@@ -8,4 +8,5 @@ import ru.practicum.model.Action;
 @Setter
 public class EventUpdateRequestDto extends EventRequestDto implements ManuallyValidated {
     private Action stateAction;
+    private String reviewComment;
 }

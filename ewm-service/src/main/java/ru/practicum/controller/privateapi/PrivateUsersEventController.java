@@ -33,7 +33,7 @@ import static ru.practicum.common.Variables.SIZE_DEFAULT;
 import static ru.practicum.common.Variables.SIZE_NOT_POSITIVE_MESSAGE;
 
 @RestController
-@RequestMapping(path = "/users")
+@RequestMapping(path = "/users/{userId}")
 @Validated
 @RequiredArgsConstructor
 @Slf4j
@@ -41,7 +41,7 @@ public class  PrivateUsersEventController {
     private final EventService eventService;
     private final RequestService requestService;
 
-    @GetMapping(path = "/{userId}/events")
+    @GetMapping(path = "/events")
     public List<EventResponseDto> getEventsByUserId(
             @PathVariable Long userId,
             @RequestParam(defaultValue = FROM_DEFAULT) @PositiveOrZero(message = FROM_BELOW_ZERO_MESSAGE) int from,
@@ -51,21 +51,21 @@ public class  PrivateUsersEventController {
         return eventService.getEventsByUserId(userId, from, size);
     }
 
-    @GetMapping(path = "/{userId}/events/{eventId}")
+    @GetMapping(path = "/events/{eventId}")
     public EventResponseDto getEventByIdAndUserId(@PathVariable Long userId, @PathVariable Long eventId) {
         log.debug("GET /users/{}/events/{} - Getting events by userId and eventId", userId, eventId);
 
         return eventService.getEventByIdAndUserId(userId, eventId);
     }
 
-    @GetMapping(path = "/{userId}/events/{eventId}/requests")
+    @GetMapping(path = "/events/{eventId}/requests")
     public List<RequestResponseDto> getRequests(@PathVariable Long userId, @PathVariable Long eventId) {
         log.debug("GET /users/{}/events/{}/requests - Getting requests by userId and eventId", userId, eventId);
 
         return requestService.getRequestsByUserIdAndEventId(userId, eventId);
     }
 
-    @GetMapping(path = "/{userId}/requests")
+    @GetMapping(path = "/requests")
     public List<RequestResponseDto> getRequestsByUserId(@PathVariable Long userId) {
         log.debug("GET /users/{}/requests - Getting requests by userId", userId);
 
@@ -73,14 +73,14 @@ public class  PrivateUsersEventController {
     }
 
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping(path = "/{userId}/events")
+    @PostMapping(path = "/events")
     public EventResponseDto postEvent(@PathVariable Long userId, @Valid @RequestBody EventRequestDto eventRequestDto) {
         log.debug("POST /users/{}/events - Creating event: {}", userId, eventRequestDto);
 
         return eventService.createEvent(userId, eventRequestDto);
     }
 
-    @PostMapping(path = "/{userId}/requests")
+    @PostMapping(path = "/requests")
     @ResponseStatus(HttpStatus.CREATED)
     public RequestResponseDto postRequest(@PathVariable Long userId, @RequestParam Long eventId) {
         log.debug("POST /users/{}/requests - Creating request with param: eventId={}", userId, eventId);
@@ -88,7 +88,7 @@ public class  PrivateUsersEventController {
         return requestService.createRequest(userId, eventId);
     }
 
-    @PatchMapping(path = "/{userId}/events/{eventId}")
+    @PatchMapping(path = "/events/{eventId}")
     public EventResponseDto updateEvent(@PathVariable Long userId, @PathVariable Long eventId,
                                         @RequestBody(required = false) EventUpdateRequestDto eventUpdateRequestDto) {
         log.debug("PATCH /users/{}/events/{} - Updating event: {}", userId, eventId, eventUpdateRequestDto);
@@ -96,7 +96,7 @@ public class  PrivateUsersEventController {
         return eventService.updateEvent(userId, eventId, eventUpdateRequestDto);
     }
 
-    @PatchMapping(path = "/{userId}/events/{eventId}/requests")
+    @PatchMapping(path = "/events/{eventId}/requests")
     public ConfirmResponseDto confirmOrCancelRequest(@PathVariable Long userId,
                                                      @PathVariable Long eventId,
                                                      @RequestBody(required = false) ConfirmRequestDto crd) {
@@ -105,7 +105,7 @@ public class  PrivateUsersEventController {
         return requestService.confirmOrCancelRequest(userId, eventId, crd);
     }
 
-    @PatchMapping(path = "/{userId}/requests/{requestId}/cancel")
+    @PatchMapping(path = "/requests/{requestId}/cancel")
     public RequestResponseDto cancelRequest(@PathVariable Long userId, @PathVariable Long requestId) {
         log.debug("PATCH /users/{}/requests/{}/cancel - Cancelling request", userId, requestId);
 

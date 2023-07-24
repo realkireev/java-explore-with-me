@@ -1,5 +1,6 @@
 package ru.practicum.service.interfaces;
 
+import ru.practicum.dto.EventStatisticsDto;
 import ru.practicum.dto.EventRequestDto;
 import ru.practicum.dto.EventResponseDto;
 import ru.practicum.dto.EventUpdateRequestDto;
@@ -28,7 +29,9 @@ public interface EventService {
 
     EventResponseDto updateEvent(Long userId, Long eventId, EventUpdateRequestDto eventUpdateRequestDto);
 
-    EventResponseDto publishOrCancelEvent(Long eventId, EventUpdateRequestDto eventUpdateRequestDto);
+    EventResponseDto handleEventPublication(Long eventId, EventUpdateRequestDto eventUpdateRequestDto);
 
     Event findEventById(Long eventId);
+
+    List<EventStatisticsDto> getEventCountByState();
 }
